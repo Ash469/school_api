@@ -108,7 +108,7 @@ npm run help
 | Method | Endpoint | Description | Request Body / Query Params |
 |--------|----------|-------------|----------------------------|
 | GET    | `/test-db` | Test database connection | N/A |
-| POST   | `/addSchool` | Add a new school | `{ "name": "School Name", "address": "123 Education St", "latitude": 40.7128, "longitude": -74.0060 }` |
+| POST   | `/addSchool` | Add one or multiple schools | Single object: `{ "name": "School Name", "address": "123 Education St", "latitude": 40.7128, "longitude": -74.0060 }` or Array: `[{school1}, {school2}, ...]` |
 | GET    | `/listSchools` | List all schools | N/A |
 | GET    | `/listSchools?latitude=40.7128&longitude=-74.0060` | List schools sorted by distance | `latitude`, `longitude` as query parameters |
 | DELETE | `/deleteSchool/:id` | Delete a school | `id` as URL parameter |
@@ -126,6 +126,27 @@ curl -X POST http://localhost:3000/addSchool \
     "latitude": 40.7128,
     "longitude": -74.0060
   }'
+```
+
+#### Add multiple schools
+
+```bash
+curl -X POST http://localhost:3000/addSchool \
+  -H "Content-Type: application/json" \
+  -d '[
+    {
+      "name": "Lincoln High School",
+      "address": "123 Education Ave",
+      "latitude": 40.7128,
+      "longitude": -74.0060
+    },
+    {
+      "name": "Washington Academy",
+      "address": "456 Learning Lane",
+      "latitude": 40.7129,
+      "longitude": -74.0062
+    }
+  ]'
 ```
 
 #### List all schools

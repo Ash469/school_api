@@ -13,13 +13,29 @@ Available endpoints:
 1. Add a new school
    POST http://localhost:${port}/addSchool
    
-   Request body example:
+   Request body example (single school):
    {
      "name": "Lincoln High School",
      "address": "123 Education Ave",
      "latitude": 40.7128,
      "longitude": -74.0060
    }
+
+   Request body example (multiple schools):
+   [
+     {
+       "name": "Lincoln High School",
+       "address": "123 Education Ave",
+       "latitude": 40.7128,
+       "longitude": -74.0060
+     },
+     {
+       "name": "Washington Academy",
+       "address": "456 Learning Lane",
+       "latitude": 40.7129,
+       "longitude": -74.0062
+     }
+   ]
 
 2. List all schools
    GET http://localhost:${port}/listSchools

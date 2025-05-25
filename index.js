@@ -55,7 +55,7 @@ async function startServer() {
       console.log(`Server running on port ${process.env.PORT}`);
       console.log(`API endpoints:`);
       console.log(`- GET http://localhost:${process.env.PORT}/test-db`);
-      console.log(`- POST http://localhost:${process.env.PORT}/addSchool`);
+      console.log(`- POST http://localhost:${process.env.PORT}/addSchool (accepts both single school and array of schools)`);
       console.log(`- GET http://localhost:${process.env.PORT}/listSchools`);
       console.log(`- GET http://localhost:${process.env.PORT}/listSchools?latitude=40.7128&longitude=-74.0060`);
       console.log(`- DELETE http://localhost:${process.env.PORT}/deleteSchool/:id`);

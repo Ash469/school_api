@@ -11,52 +11,100 @@ const schoolSchema = Joi.object({
 
 exports.addSchool = async (req, res) => {
   try {
-    const { error, value } = schoolSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
+    // Check if the request body is an array
+    const isArray = Array.isArray(req.body);
+    const schoolData = isArray ? req.body : [req.body];
+    
+    // Validate all school entries
+    const validationErrors = [];
+    const validSchools = [];
+    
+    for (const school of schoolData) {
+      const { error, value } = schoolSchema.validate(school);
+      if (error) {
+        validationErrors.push({
+          data: school,
+          error: error.details[0].message
+        });
+      } else {
+        validSchools.push(value);
+      }
     }
 
-    const { name, address, latitude, longitude } = value;
+    // If there are validation errors
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ 
+        error: 'Validation failed for one or more schools', 
+        details: validationErrors 
+      });
+    }
+
+    // If no valid schools to add
+    if (validSchools.length === 0) {
+      return res.status(400).json({ error: 'No valid school data provided' });
+    }
 
     try {
       const client = await db.pool.connect();
+      const results = [];
       
       try {
         await client.query('BEGIN');
         
-        // Find the lowest available ID
-        const idResult = await client.query(`
-          SELECT i.id + 1 AS next_id
-          FROM schools i
-          LEFT JOIN schools i2 ON i.id + 1 = i2.id
-          WHERE i2.id IS NULL
-          ORDER BY next_id
-          LIMIT 1;
-        `);
-        
-        let nextId = 1; // Default if table is empty
-        
-        if (idResult.rows.length > 0) {
-          nextId = idResult.rows[0].next_id;
-        } else {
-          // If the query returns no rows, check if the table is empty
-          const countResult = await client.query('SELECT COUNT(*) FROM schools');
-          if (parseInt(countResult.rows[0].count) > 0) {
-            // Find the max ID and add 1
-            const maxResult = await client.query('SELECT MAX(id) + 1 AS next_id FROM schools');
-            nextId = maxResult.rows[0].next_id || 1;
+        for (const { name, address, latitude, longitude } of validSchools) {
+          // Find the lowest available ID
+          const idResult = await client.query(`
+            SELECT i.id + 1 AS next_id
+            FROM schools i
+            LEFT JOIN schools i2 ON i.id + 1 = i2.id
+            WHERE i2.id IS NULL
+            ORDER BY next_id
+            LIMIT 1;
+          `);
+          
+          let nextId = 1; // Default if table is empty
+          
+          if (idResult.rows.length > 0) {
+            nextId = idResult.rows[0].next_id;
+          } else {
+            // If the query returns no rows, check if the table is empty
+            const countResult = await client.query('SELECT COUNT(*) FROM schools');
+            if (parseInt(countResult.rows[0].count) > 0) {
+              // Find the max ID and add 1
+              const maxResult = await client.query('SELECT MAX(id) + 1 AS next_id FROM schools');
+              nextId = maxResult.rows[0].next_id || 1;
+            }
           }
+          
+          // Insert with the found ID
+          const insertQuery = 'INSERT INTO schools (id, name, address, latitude, longitude) VALUES ($1, $2, $3, $4, $5) RETURNING id';
+          const result = await client.query(insertQuery, [nextId, name, address, latitude, longitude]);
+          
+          results.push({
+            id: result.rows[0].id,
+            name,
+            address,
+            latitude,
+            longitude
+          });
         }
         
-        // Insert with the found ID
-        const insertQuery = 'INSERT INTO schools (id, name, address, latitude, longitude) VALUES ($1, $2, $3, $4, $5) RETURNING id';
-        const result = await client.query(insertQuery, [nextId, name, address, latitude, longitude]);
         await client.query('COMMIT');
         
-        res.status(201).json({ 
-          message: 'School added successfully', 
-          id: result.rows[0].id 
-        });
+        // Return appropriate response based on whether input was array or single object
+        if (isArray) {
+          res.status(201).json({ 
+            message: `${results.length} schools added successfully`, 
+            schools: results 
+          });
+        } else {
+          res.status(201).json({ 
+            message: 'School added successfully', 
+            id: results[0].id,
+            school: results[0]
+          });
+        }
+        
       } catch (dbError) {
         await client.query('ROLLBACK');
         throw dbError;
