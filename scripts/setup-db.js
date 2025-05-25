@@ -2,17 +2,29 @@ require('dotenv').config({ path: '../.env' });
 const { Pool } = require('pg');
 
 async function setupDatabase() {
-  const pool = new Pool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || '123456',
-    database: process.env.DB_NAME || 'local',
-    port: process.env.DB_PORT || 5432
-  });
+  let poolConfig;
+  
+  if (process.env.DB_CONNECTION_STRING) {
+    poolConfig = {
+      connectionString: process.env.DB_CONNECTION_STRING
+    };
+    console.log('Using connection string for Railway database');
+  } else {
+    poolConfig = {
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || '123456',
+      database: process.env.DB_NAME || 'local',
+      port: process.env.DB_PORT || 5432
+    };
+    console.log('Using individual connection parameters');
+  }
+
+  const pool = new Pool(poolConfig);
 
   try {
     const client = await pool.connect();
-    console.log('Connected to PostgreSQL');
+    console.log('Connected to PostgreSQL on Railway');
     
     // Drop existing table if it exists
     await client.query('DROP TABLE IF EXISTS schools');

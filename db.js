@@ -1,20 +1,33 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT || 5432
-});
+let poolConfig;
+
+// Check if connection string is provided
+if (process.env.DB_CONNECTION_STRING) {
+  // Use the connection string directly
+  poolConfig = {
+    connectionString: process.env.DB_CONNECTION_STRING
+  };
+} else {
+  // Use individual parameters
+  poolConfig = {
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT || 5432
+  };
+}
+
+const pool = new Pool(poolConfig);
 
 // Test database connection
 const testConnection = async () => {
   try {
     const client = await pool.connect();
     const res = await client.query('SELECT NOW() as now');
-    console.log('✅ PostgreSQL Connected');
+    console.log('✅ PostgreSQL Connected to Railway');
     client.release();
     return true;
   } catch (err) {
